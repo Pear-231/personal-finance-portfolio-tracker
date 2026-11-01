@@ -269,7 +269,7 @@ class Performance {
       this.colourReturns_();
     });
 
-    runTimed("grouped them", () => this.groupRows_(rows, now));
+    runTimed("grouped them", () => this.groupRows_(rows));
     SheetTable.ignoreTypedColumns(() => SheetTable.writeTimestamp(sheet, now));
     Performance.log.information("write", `${rows.length} rows: ${timings.join(", ")}.`);
   }
@@ -459,14 +459,15 @@ class Performance {
     return [buildGroup("threeYearReturnAmount", "fiveYearReturn"), buildGroup("cpi", "standardDeviation")];
   }
 
-  groupRows_(rows, now) {
+  groupRows_(rows) {
     const { sheet } = this;
+    const latestMonth = Performance.findLatestMonth_(rows);
     SheetTable.ignoreTypedColumns(() =>
       SheetGroups.replace(sheet, {
         rows: {
           firstRow: 2,
           groups: Performance.findGroupedRows_(rows),
-          isOpen: (group) => Performance.isCurrent_(rows, group.index - 1, now)
+          isOpen: (group) => Performance.isLatestMonth_(rows, group.index - 1, latestMonth)
         },
         columns: {
           groups: Performance.getColumnGroups_()
@@ -475,14 +476,19 @@ class Performance {
     );
   }
 
-  static isCurrent_(rows, index, now) {
+  static findLatestMonth_(rows) {
+    const months = rows.filter((row) => row.level === Performance.monthLevel).map((row) => row.values[0]);
+    return new Date(Math.max(...months.map((month) => month.getTime())));
+  }
+
+  static isLatestMonth_(rows, index, latestMonth) {
     const { level, values } = rows[index];
-    if (level === Performance.yearLevel) return values[0] === now.getFullYear();
+    if (level === Performance.yearLevel) return values[0] === latestMonth.getFullYear();
     let monthIndex = index;
     while (rows[monthIndex].level !== Performance.monthLevel) monthIndex -= 1;
 
     const month = rows[monthIndex].values[0];
-    return month.getFullYear() === now.getFullYear() && month.getMonth() === now.getMonth();
+    return month.getTime() === latestMonth.getTime();
   }
 
   static findGroupedRows_(rows) {
