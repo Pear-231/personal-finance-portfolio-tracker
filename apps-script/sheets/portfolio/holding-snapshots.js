@@ -32,7 +32,7 @@ class HoldingSnapshots {
 
     const isClosed = !Numbers.isHolding(quantity);
     const isCash = metadata.assetType === AssetTypes.cash;
-    const { price, exchangeRate, priceValue, value } = this.valueHolding_(asset, metadata, latest);
+    const { price, exchangeRate, priceValue, value, accruedInterest } = this.valueHolding_(asset, metadata, latest);
     const openCost = latest.closingOpenCost;
 
     const localOpenCost = this.calculateLocalOpenCost_(asset);
@@ -62,6 +62,7 @@ class HoldingSnapshots {
       fees,
       realisedPnl: 0,
       price: isShownAsOne ? value : price,
+      accruedInterest,
       value,
       totalReturn: value + income - openCost - accruedInterestPaid,
       localAverageCost: isShownAsOne ? openCost : localAverageCost,
@@ -77,13 +78,13 @@ class HoldingSnapshots {
   /** A closed holding has no value, and is not priced. */
   valueHolding_(asset, metadata, latest) {
     const quantity = latest.closingQuantity;
-    if (!Numbers.isHolding(quantity)) return { price: 0, exchangeRate: 1, priceValue: 0, value: 0 };
+    if (!Numbers.isHolding(quantity)) return { price: 0, exchangeRate: 1, priceValue: 0, accruedInterest: 0, value: 0 };
 
     const price = this.getCurrentPrice_(asset, metadata, latest);
     const exchangeRate = this.findLatestExchangeRate_(metadata.currency);
     const priceValue = quantity * price * exchangeRate;
     const accruedInterest = quantity * Assets.calculatePerUnit(metadata, this.valuationDate);
-    return { price, exchangeRate, priceValue, value: priceValue + accruedInterest };
+    return { price, exchangeRate, priceValue, accruedInterest, value: priceValue + accruedInterest };
   }
 
   snapshotSale_(asset, sale) {
@@ -108,6 +109,7 @@ class HoldingSnapshots {
       fees,
       realisedPnl: capitalReturn,
       price: 0,
+      accruedInterest: 0,
       value: 0,
       totalReturn: capitalReturn + sale.income - accruedInterestPaid,
       localAverageCost: localCost / sale.quantity,

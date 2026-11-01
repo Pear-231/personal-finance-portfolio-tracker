@@ -51,6 +51,10 @@ class Portfolio {
     return "Value (£)";
   }
 
+  static get accruedInterestHeader() {
+    return "Accrued Interest (£)";
+  }
+
   static get returnHeader() {
     return "Return (£)";
   }
@@ -109,10 +113,11 @@ class Portfolio {
       Portfolio.openDateHeader,
       Portfolio.closeDateHeader,
       Portfolio.valuationDateHeader,
-      Portfolio.feesHeader,
-      Portfolio.distributionsHeader,
       Portfolio.costBasisHeader,
+      Portfolio.feesHeader,
       Portfolio.valueHeader,
+      Portfolio.distributionsHeader,
+      Portfolio.accruedInterestHeader,
       Portfolio.returnHeader,
       Portfolio.returnPercentageHeader,
       Portfolio.assetReturnHeader,
@@ -176,6 +181,8 @@ class Portfolio {
     });
 
     return [
+      group(Portfolio.feesHeader, Portfolio.feesHeader),
+      group(Portfolio.distributionsHeader, Portfolio.accruedInterestHeader),
       group(Portfolio.assetReturnHeader, Portfolio.currencyEffectPercentageHeader),
       group(Portfolio.oneMonthReturnHeader, Portfolio.threeMonthReturnPercentageHeader)
     ];
@@ -216,6 +223,7 @@ class Portfolio {
       averageCost: letterOf(Portfolio.localAverageCostHeader),
       fees: letterOf(Portfolio.feesHeader),
       distributions: letterOf(Portfolio.distributionsHeader),
+      accruedInterest: letterOf(Portfolio.accruedInterestHeader),
       costBasis: letterOf(Portfolio.costBasisHeader),
       value: letterOf(Portfolio.valueHeader),
       totalReturn: letterOf(Portfolio.returnHeader),
@@ -338,7 +346,7 @@ class Portfolio {
     }
 
     for (const { row, formulas: block } of summaries) {
-      place(row, Portfolio.getColumn(Portfolio.feesHeader), block);
+      place(row, Portfolio.getColumn(Portfolio.costBasisHeader), block);
     }
 
     return cells;

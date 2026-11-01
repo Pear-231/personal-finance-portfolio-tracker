@@ -254,20 +254,17 @@ class PortfolioLayout {
     const c = Portfolio.letters;
     const rate = Currencies.buildRateLookup(`$${c.currency}${r}`);
     const isBond = Assets.hasTerms(asset);
-    const accrued = isBond ? PortfolioData.buildLatestLookup(PortfolioData.accruedInterestHeader, `$A${r}`) : "";
+    const accrued = isBond ? PortfolioData.buildLatestLookup(PortfolioData.accruedInterestHeader, `$A${r}`) : "0";
     const paid = isBond ? PortfolioData.buildLatestLookup(PortfolioData.accruedInterestPaidHeader, `$A${r}`) : "";
     const priceValue = `$${c.quantity}${r}*$${c.unitValue}${r}*${rate}`;
+    const accruedInterest = `$${c.accruedInterest}${r}`;
     const costExcludingFees = `($${c.costBasis}${r}-$${c.fees}${r})`;
     const assetReturn =
       `IF(OR($${c.currency}${r}="${Currencies.pounds}",$${c.currency}${r}="${Currencies.pence}"),${priceValue}-${costExcludingFees},` +
       `IFERROR(($${c.unitValue}${r}/$${c.averageCost}${r}-1)*${costExcludingFees},0))`;
 
     const buildPercentage = (column) => PortfolioLayout.buildPercentageOfCost_(column, r);
-    const valueAndReturn = [
-      `=${priceValue}${isBond ? `+${accrued}` : ""}`,
-      `=$${c.value}${r}+$${c.distributions}${r}-$${c.costBasis}${r}${isBond ? `-${paid}` : ""}`,
-      buildPercentage(c.totalReturn)
-    ];
+    const totalReturn = [`=$${c.value}${r}+$${c.distributions}${r}-$${c.costBasis}${r}${isBond ? `-${paid}` : ""}`, buildPercentage(c.totalReturn)];
 
     const attribution = [
       `=${assetReturn}`,
@@ -279,7 +276,9 @@ class PortfolioLayout {
     const lookup = `=${Assets.buildLookup(this.assetColumns, "price", `$A${r}`)}`;
     return [
       { row: r, column: Portfolio.getColumn(Portfolio.localUnitValueHeader), formulas: [lookup] },
-      { row: r, column: Portfolio.getColumn(Portfolio.valueHeader), formulas: valueAndReturn },
+      { row: r, column: Portfolio.getColumn(Portfolio.accruedInterestHeader), formulas: [`=${accrued}`] },
+      { row: r, column: Portfolio.getColumn(Portfolio.valueHeader), formulas: [`=${priceValue}+${accruedInterest}`] },
+      { row: r, column: Portfolio.getColumn(Portfolio.returnHeader), formulas: totalReturn },
       { row: r, column: Portfolio.getColumn(Portfolio.assetReturnHeader), formulas: attribution }
     ];
   }

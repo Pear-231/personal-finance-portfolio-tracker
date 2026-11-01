@@ -164,7 +164,15 @@ class PortfolioReportBuilder {
   }
 
   static buildSummaryRow_(label, total, isRealised) {
-    return [label, "", "", "", "", "", ...PortfolioReportBuilder.buildFigures_(total, isRealised ? 0 : total.value, { includePercentages: !isRealised })];
+    return [
+      label,
+      "",
+      "",
+      "",
+      "",
+      "",
+      ...PortfolioReportBuilder.buildFigures_(total, isRealised ? 0 : total.value, { includePercentages: !isRealised })
+    ];
   }
 
   static buildFigures_(figures, value, { includePercentages = true } = {}) {
@@ -174,10 +182,11 @@ class PortfolioReportBuilder {
     };
 
     return [
-      figures.fees,
-      figures.income,
       figures.costBasis,
+      figures.fees,
       value,
+      figures.income,
+      figures.accruedInterest,
       figures.totalReturn,
       calculatePercentageOfCost(figures.totalReturn),
       figures.assetReturn,
@@ -193,6 +202,7 @@ class PortfolioReportBuilder {
         fees: total.fees + snapshot.fees,
         costBasis: total.costBasis + snapshot.costBasis,
         value: total.value + snapshot.value,
+        accruedInterest: total.accruedInterest + snapshot.accruedInterest,
         totalReturn: total.totalReturn + snapshot.totalReturn,
         assetReturn: total.assetReturn + snapshot.assetReturn,
         currencyEffect: total.currencyEffect + snapshot.currencyEffect,
@@ -202,6 +212,7 @@ class PortfolioReportBuilder {
         fees: 0,
         costBasis: 0,
         value: 0,
+        accruedInterest: 0,
         totalReturn: 0,
         assetReturn: 0,
         currencyEffect: 0,
@@ -276,8 +287,19 @@ class PortfolioReportBuilder {
   }
 
   static buildSummaryFormulas_(totalOf, summaryRow, columns, { includeRecentReturns = true, includePercentages = true } = {}) {
-    const { fees, costBasis, value, totalReturn, oneDayReturn, oneMonthReturn, threeMonthReturn, assetReturn, currencyEffect, distributions } =
-      columns;
+    const {
+      fees,
+      costBasis,
+      value,
+      totalReturn,
+      oneDayReturn,
+      oneMonthReturn,
+      threeMonthReturn,
+      assetReturn,
+      currencyEffect,
+      distributions,
+      accruedInterest
+    } = columns;
     const buildPercentageOfCost = (column) => (includePercentages ? `=IFERROR(${column}${summaryRow}/${costBasis}${summaryRow},0)` : "");
     const recentReturns = includeRecentReturns
       ? [
@@ -291,10 +313,11 @@ class PortfolioReportBuilder {
       : ["", "", "", "", "", ""];
 
     return [
-      totalOf(fees),
-      totalOf(distributions),
       totalOf(costBasis),
+      totalOf(fees),
       totalOf(value),
+      totalOf(distributions),
+      totalOf(accruedInterest),
       totalOf(totalReturn),
       buildPercentageOfCost(totalReturn),
       totalOf(assetReturn),
