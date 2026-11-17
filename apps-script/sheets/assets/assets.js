@@ -225,6 +225,10 @@ class Assets {
     return asset.isShort || asset.leverage !== 1;
   }
 
+  static hasPriceSource(asset) {
+    return [asset.ticker, asset.yahooTicker, asset.customIdentifier].some((value) => String(value || "").trim() !== "");
+  }
+
   static hasMarketPrice(asset) {
     if (asset.customIdentifier) return true;
 

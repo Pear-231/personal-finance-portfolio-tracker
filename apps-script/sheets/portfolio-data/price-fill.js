@@ -52,16 +52,18 @@ class PriceFill {
     }));
   }
 
-  buildDatedValuations(assetName, asset, events, valuations) {
+  buildDatedValuations(assetName, asset, events, valuations, suppliedPrice = null) {
     const valuationDays = valuations.map((valuation) => Dates.toDayKey(valuation.date));
 
+    // Earlier days keep their recorded prices; a supplied price values only the target day, or starts a series with no history.
     return this.findHoldingDays_(events).map(({ date, unitCost }) => {
       const latest = PriceFill.findLastIndexOnOrBefore_(valuationDays, Dates.toDayKey(date));
+      const recordedPrice = latest >= 0 ? valuations[latest].close : (suppliedPrice ?? unitCost);
       return {
         asset: assetName,
         currency: asset.currency,
         date,
-        close: latest >= 0 ? valuations[latest].close : unitCost
+        close: Dates.toDayKey(date) === this.targetKey && suppliedPrice !== null ? suppliedPrice : recordedPrice
       };
     });
   }

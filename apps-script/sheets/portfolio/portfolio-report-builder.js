@@ -221,7 +221,7 @@ class PortfolioReportBuilder {
     );
   }
 
-  static buildFormulae(labels, { firstRow, columns, includeRecentReturns = true, includePercentages = true }) {
+  static buildFormulae(labels, { firstRow, columns, includePercentages = true }) {
     const assetTypes = AssetTypes.all.filter((type) => labels.includes(type));
     const findRow = (label) => PortfolioReportBuilder.findLabelRow_(labels, label, firstRow);
     const headingRows = new Map(assetTypes.map((type) => [type, findRow(type)]));
@@ -233,7 +233,6 @@ class PortfolioReportBuilder {
       return {
         row: heading,
         formulas: PortfolioReportBuilder.buildSummaryFormulas_(PortfolioReportBuilder.buildSectionTotal_(heading, nextHeading), heading, columns, {
-          includeRecentReturns,
           includePercentages
         })
       };
@@ -244,7 +243,7 @@ class PortfolioReportBuilder {
       const totalOf = (column) => `=SUM(${rows.map((row) => `${column}${row}`).join(",")})`;
       return {
         row: summaryRow,
-        formulas: PortfolioReportBuilder.buildSummaryFormulas_(totalOf, summaryRow, columns, { includeRecentReturns, includePercentages })
+        formulas: PortfolioReportBuilder.buildSummaryFormulas_(totalOf, summaryRow, columns, { includePercentages })
       };
     };
 
@@ -286,31 +285,9 @@ class PortfolioReportBuilder {
     return PortfolioReportBuilder.buildSummaryFormulas_(totalOf, summaryRow, columns, options);
   }
 
-  static buildSummaryFormulas_(totalOf, summaryRow, columns, { includeRecentReturns = true, includePercentages = true } = {}) {
-    const {
-      fees,
-      costBasis,
-      value,
-      totalReturn,
-      oneDayReturn,
-      oneMonthReturn,
-      threeMonthReturn,
-      assetReturn,
-      currencyEffect,
-      distributions,
-      accruedInterest
-    } = columns;
+  static buildSummaryFormulas_(totalOf, summaryRow, columns, { includePercentages = true } = {}) {
+    const { fees, costBasis, value, totalReturn, assetReturn, currencyEffect, distributions, accruedInterest } = columns;
     const buildPercentageOfCost = (column) => (includePercentages ? `=IFERROR(${column}${summaryRow}/${costBasis}${summaryRow},0)` : "");
-    const recentReturns = includeRecentReturns
-      ? [
-          totalOf(oneDayReturn),
-          buildPercentageOfCost(oneDayReturn),
-          totalOf(oneMonthReturn),
-          buildPercentageOfCost(oneMonthReturn),
-          totalOf(threeMonthReturn),
-          buildPercentageOfCost(threeMonthReturn)
-        ]
-      : ["", "", "", "", "", ""];
 
     return [
       totalOf(costBasis),
@@ -324,7 +301,7 @@ class PortfolioReportBuilder {
       buildPercentageOfCost(assetReturn),
       totalOf(currencyEffect),
       buildPercentageOfCost(currencyEffect),
-      ...recentReturns
+      ...Array(6).fill("")
     ];
   }
 }

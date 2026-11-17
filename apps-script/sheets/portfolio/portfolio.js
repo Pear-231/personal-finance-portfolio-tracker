@@ -285,6 +285,7 @@ class Portfolio {
     Logger.runStep(Portfolio.sheetName, () => {
       const portfolio = Portfolio.open(spreadsheet);
       portfolio.write(layout);
+      portfolio.recordRefreshTime(new Date());
       disagreements = portfolio.findDisagreements(layout.expectations);
     });
 
@@ -341,12 +342,12 @@ class Portfolio {
     const cells = rows.map((row) => [...row]);
     const place = (row, column, block) => cells[row - 2].splice(column - 1, block.length, ...block);
 
-    for (const { row, column, formulas: block } of formulas) {
-      place(row, column, block);
-    }
-
     for (const { row, formulas: block } of summaries) {
       place(row, Portfolio.getColumn(Portfolio.costBasisHeader), block);
+    }
+
+    for (const { row, column, formulas: block } of formulas) {
+      place(row, column, block);
     }
 
     return cells;

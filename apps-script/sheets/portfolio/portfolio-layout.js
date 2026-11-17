@@ -33,7 +33,6 @@ class PortfolioLayout {
         {
           firstRow: start + 2,
           columns: Portfolio.totalColumns,
-          includeRecentReturns: mode === Portfolio.currentMode,
           includePercentages: mode === Portfolio.currentMode
         }
       )
@@ -43,6 +42,9 @@ class PortfolioLayout {
     layout.formulas.push(...formulas);
     layout.expectations.push(...expectations);
     layout.rows.push(...half.rows.map((row) => PortfolioLayout.relabel_(row, isCollapsed)));
+    if (mode === Portfolio.currentMode) {
+      layout.formulas.push(...new PortfolioRecentReturns(half.rows, this.assets).build());
+    }
 
     return [start + 2, start + 3, start + 4];
   }
@@ -94,7 +96,6 @@ class PortfolioLayout {
       formulas.push(this.buildAssetLookup_(sheetRow, Portfolio.quantityHeader, "quantity"));
     }
 
-    formulas.push(PortfolioLayout.buildRecentReturnFormulas_(sheetRow));
     return formulas;
   }
 
@@ -180,7 +181,7 @@ class PortfolioLayout {
           summaryRows.map((half) => half[offset]),
           start + 2 + offset,
           Portfolio.totalColumns,
-          { includeRecentReturns: false, includePercentages: false }
+          { includePercentages: false }
         )
       });
     }
@@ -217,34 +218,6 @@ class PortfolioLayout {
         ]
       }
     ];
-  }
-
-  static buildRecentReturnFormulas_(r) {
-    const data = PortfolioData.buildColumnReference;
-    const sumWhere = (dateCondition) =>
-      `=SUMIFS(${data(PortfolioData.returnHeader)},${data(PortfolioData.assetHeader)},$A${r},${data(PortfolioData.dateHeader)},${dateCondition})`;
-
-    const latestDay = `MAXIFS(${data(PortfolioData.dateHeader)},${data(PortfolioData.assetHeader)},$A${r})`;
-    const sumSince = (months) => sumWhere(`">="&(EDATE(TODAY(),-${months})+1)`);
-
-    const buildPercentage = (header) => {
-      const column = Portfolio.getLetter(header);
-      return `=IF($${column}${r}="","",IFERROR($${column}${r}/$${Portfolio.letters.costBasis}${r},0))`;
-    };
-    const guarded = (threshold, formula) => `=IF(OR($F${r}="",TODAY()<${threshold}),"",${formula.slice(1)})`;
-
-    return {
-      row: r,
-      column: Portfolio.getColumn(Portfolio.oneDayReturnHeader),
-      formulas: [
-        guarded(`$F${r}+1`, sumWhere(latestDay)),
-        buildPercentage(Portfolio.oneDayReturnHeader),
-        guarded(`EDATE($F${r},1)`, sumSince(1)),
-        buildPercentage(Portfolio.oneMonthReturnHeader),
-        guarded(`EDATE($F${r},3)`, sumSince(3)),
-        buildPercentage(Portfolio.threeMonthReturnHeader)
-      ]
-    };
   }
 
   buildLiveFormulas_(row, sheetRow) {

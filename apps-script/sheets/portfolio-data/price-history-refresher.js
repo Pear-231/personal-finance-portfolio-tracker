@@ -39,6 +39,24 @@ class PriceHistoryRefresher {
     if (ranges.length === 0 && !usesLivePrice) return [];
 
     const currency = String(asset.currency || known[0]?.currency || "").trim();
+    if (!Assets.hasPriceSource(asset)) {
+      if (!(asset.currentValue > 0)) {
+        this.report_(`${assetName}: enter a Current Local Value above zero in Assets, or configure a price source.`);
+        return [];
+      }
+
+      const events = this.ledgerRows.filter((event) => event.asset === assetName);
+      const valuations = known.slice().sort((left, right) => left.date - right.date);
+      const prices = new PriceFill(this.ledgerRows, this.assets, this.targetDate).buildDatedValuations(
+        assetName,
+        asset,
+        events,
+        valuations,
+        asset.currentValue
+      );
+      return prices.filter((price) => !knownKeys.has(Dates.toDayKey(price.date)));
+    }
+
     const source = asset.customIdentifier ? null : this.getSource_(assetName, asset);
     if (!source && !this.isCustomIdentifierValid_(assetName, asset)) return [];
 
@@ -181,7 +199,9 @@ class PriceHistoryRefresher {
         asset: this.assets.get(assetName),
         isOpen: Numbers.isHolding(event.closingQuantity)
       }))
-      .filter(({ asset }) => asset && Assets.hasMarketPrice(asset));
+      .filter(
+        ({ asset }) => asset && (Assets.hasMarketPrice(asset) || (!Assets.isValued(asset) && !Assets.hasPriceSource(asset) && asset.currentValue > 0))
+      );
   }
 
   static fetchMissingExchangeRates(observations) {
